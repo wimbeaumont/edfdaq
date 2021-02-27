@@ -26,26 +26,26 @@
 #include <wiringPi.h>
 #include <time.h>
 
-// LED Pin - wiringPi pin 0 is BCM_GPIO 17.
 
 
-#define	LED  17  // used to have a visual feedback .
-#define UTRIG 24
-#define ECHO 23  
+#define	LED  14  // used to have a visual feedback .
+#define UTRIG 7
+#define ECHO 25  
+#define LOOPLED 18
 
 int ISRcnt=0;
 struct timespec gTime ;
 struct timespec sTime ; 
 int Time_found; 
-
+static int   LEDstat;	
 
 void EchoISR( ) {
- static int   LEDstat;
-	digitalWrite (LED, LEDstat) ;
-	LEDstat= !LEDstat;
+ 
 	ISRcnt++;
 	if( digitalRead(ECHO) ) { // is high so rising edge 
 		clock_gettime(CLOCK_MONOTONIC, &sTime);
+		digitalWrite (LED, LEDstat) ;
+		LEDstat= !LEDstat;
 	} 
 	else {clock_gettime(CLOCK_MONOTONIC, &gTime);}
 	Time_found=TRUE; 
@@ -75,10 +75,12 @@ struct timespec {
 
 
   pinMode (LED, OUTPUT) ;
+  pinMode (LOOPLED, OUTPUT) ;
   pinMode (UTRIG, OUTPUT) ;	
   wiringPiISR (ECHO, INT_EDGE_BOTH, EchoISR ) ;
-  Time_found=FALSE;	
-  
+  Time_found=FALSE;
+  LEDstat=0;	
+  int lcnt=0;
   for (;;)  {
     	digitalWrite (UTRIG, HIGH) ;
 //	clock_gettime(CLOCK_MONOTONIC, &sTime);
@@ -103,8 +105,10 @@ struct timespec {
 //	printf("get starttime on %d %d \n\r",sTime.tv_sec, sTime.tv_nsec );
 	printf( "time diff = %d s %d us dist=%f [m]\n\r" ,sT, nsT/1000, 0.5*nsT*308/1e9);
     }
-   printf( "ISRcnt = %d \n", ISRcnt);
-  }
+   //printf( "ISRcnt = %d %d \n", ISRcnt ,ISRcnt%4);
+   printf( "ISRcnt = %d \n", ISRcnt );
+   digitalWrite (LOOPLED , (lcnt++)%2);
+    }
   return 0 ;
 }
 
